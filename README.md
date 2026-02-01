@@ -1,143 +1,141 @@
-# Maven Build Lifecycle
+# Maven Dependency Scope & Transitive Dependencies
 
-Apache Maven builds projects using **lifecycles**. A lifecycle is a sequence of phases that Maven runs in order.
+## Dependency Scope
 
----
+**Dependency scope** defines the *availability* of a dependency in different phases of a Maven build:
 
-## Main Build Lifecycles
-
-Maven has **three standard lifecycles**:
-
-1. **Default** – main lifecycle (builds the project)
-2. **Clean** – cleans the project (removes `target/`)
-3. **Site** – generates documentation and reports
+* Compile time
+* Runtime
+* Test time
+* Whether it is included in the final artifact (JAR/WAR)
 
 ---
 
-## Default Lifecycle (Most Important)
+## 1. Compile Scope (default)
 
-The **default lifecycle** is responsible for building and publishing the project.
+**Availability:**
 
-Main phases (in order):
+* Compile time ✅
+* Runtime ✅
+* Test time ✅
+* Included in final artifact (JAR/WAR) ✅
 
-```text
-validate
-compile
-test
-package
-verify
-install
-deploy
+**Other characteristics:**
+
+* Transitive ✅ (passed to downstream projects)
+
+**Use case:**
+
+* Core libraries your application needs to run
+
+**Example:**
+
+```xml
+<dependency>
+  <groupId>org.apache.commons</groupId>
+  <artifactId>commons-lang3</artifactId>
+  <version>3.14.0</version>
+</dependency>
 ```
 
-### What these phases do (simple)
+---
 
-* **validate** – checks if the project is correct
-* **compile** – compiles source code
-* **test** – runs unit tests
-* **package** – creates JAR/WAR/EAR
-* **verify** – checks quality rules
-* **install** – installs artifact to local repo (`.m2`)
-* **deploy** – uploads artifact to remote repo
+## 2. Provided Scope
 
-Running a later phase automatically runs all previous ones.
+**Availability:**
+
+* Compile time ✅
+* Runtime ❌ (provided by container)
+* Test time ✅
+* Included in final artifact ❌
+
+**Other characteristics:**
+
+* Transitive ❌
+
+**Use case:**
+
+* Dependencies supplied by the runtime environment (e.g., application server)
+
+**Example:**
+
+```xml
+<dependency>
+  <groupId>jakarta.servlet</groupId>
+  <artifactId>jakarta.servlet-api</artifactId>
+  <scope>provided</scope>
+</dependency>
+```
 
 ---
 
-## Clean Lifecycle
+## Scope Comparison Table
 
-Used to clean the project.
+| Scope    | Compile | Runtime | Test | Included in Artifact | Transitive |
+| -------- | ------- | ------- | ---- | -------------------- | ---------- |
+| compile  | ✅       | ✅       | ✅    | ✅                    | ✅          |
+| provided | ✅       | ❌       | ✅    | ❌                    | ❌          |
 
-Main phase:
+---
 
-```text
-clean
+## Transitive Dependencies
+
+**Definition:**
+Transitive dependencies are *dependencies of your dependencies* that Maven automatically includes.
+
+---
+
+## Spring Boot Example
+
+If your project depends on:
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
 ```
 
-What it does:
+You indirectly get (transitively):
 
-* Deletes the `target/` directory
+* Spring MVC
+* Jackson (JSON processing)
+* Embedded Tomcat
+* Logging libraries
+* Validation APIs
 
-Example:
+You declare **one dependency**, but Maven resolves and adds **many transitive dependencies**.
+
+---
+
+## Why Transitive Dependencies Matter
+
+**Advantages:**
+
+* Less manual dependency management
+* Consistent versions
+* Faster development
+
+**Risks:**
+
+* Dependency bloat
+* Version conflicts ("jar hell")
+
+---
+
+## Useful Command
+
+View full dependency hierarchy:
 
 ```bash
-mvn clean
+mvn dependency:tree
 ```
 
 ---
 
-## Site Lifecycle
+## Exam-Friendly Summary
 
-Used to generate documentation and reports.
-
-Main phase:
-
-```text
-site
-```
-
-What it does:
-
-* Generates HTML documentation
-* Creates reports (tests, coverage, javadoc)
-
-Output location:
-
-```text
-target/site/index.html
-```
-
-Example:
-
-```bash
-mvn site
-```
-
----
-
-## Plugins in Maven
-
-Maven does the actual work using **plugins**.
-
-### Core Plugins
-
-Used for basic build operations:
-
-* Compilation
-* Installation
-* Deployment
-* Validation
-
-Examples:
-
-* `maven-compiler-plugin`
-* `maven-install-plugin`
-* `maven-deploy-plugin`
-
----
-
-### Packaging Plugins
-
-Used to create different types of artifacts:
-
-* **jar** – Java libraries
-* **war** – Web applications
-* **ear** – Enterprise applications
-* **shade** – Fat / Uber JARs
-
-Examples:
-
-* `maven-jar-plugin`
-* `maven-war-plugin`
-* `maven-shade-plugin`
-
----
-
-## Quick Summary
-
-* Maven has **3 lifecycles**: Default, Clean, Site
-* **Default lifecycle** builds and publishes the project
-* **Clean** removes build output
-* **Site** generates documentation
-* **Plugins** do the real work
-* Later phases automatically run earlier ones
+* **Dependency scope** controls *when* and *how* a dependency is available
+* **Compile** = everywhere + packaged
+* **Provided** = compile/test only, container supplies at runtime
+* **Transitive dependencies** are automatically pulled in dependencies of dependencies
